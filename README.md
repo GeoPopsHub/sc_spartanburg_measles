@@ -10,6 +10,6 @@ Then, you can download the repo and go through the notebooks in order, or try ou
 | -------- | -------- | -------- | 
 | 1_run_geopops.ipynb | Make a GeoPops population of Spartanburg, SC| [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_Z9nu2t6jQpk8kY1FF5YTVw) |
 | 2_explore_people.ipynb | Explore Starsim People object and compare GeoPops population to real Census data| |
-| 3_explore_networks.ipynb | Run a simple SIR model and see what happends when you change network edge weights | |
+| 3_explore_networks.ipynb | Run a simple SIR model and see what happends when you change network edge weights | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_PedmQ3ANiHAYCcAAKhJjwS) |
 | 4_measles_seeding.ipynb | Seed infections to a specific school and observe spatial spread | |
 | 5_measles_quarantine.ipynb | Test four quarantine strategies:<br>- Infected individual only<br>- Infected individual and siblings<br>- Infected individual and contacts<br>- Entire school | |
