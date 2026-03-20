@@ -15,7 +15,7 @@ Then, you can download the repo and go through the notebooks in order, or try ou
 | 5_measles_quarantine.ipynb | Test four quarantine strategies:<br>- Infected individual only<br>- Infected individual and siblings<br>- Infected individual and contacts<br>- Entire school | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_pMKcSuZQ7nRSVsih3EyB6u)|
 
 ## GeoPops with Starsim
-![GeoPops Starsim](GeoPops_Starsim.jpeg)
+![GeoPops Starsim](GeoPops_Measles.jpeg)
 
 The **GeoPops with Starsim** framework enables detailed scenario modeling because for every agent, we know:
 * Several demographic characteristics (age, gender, race/ethnicity)
