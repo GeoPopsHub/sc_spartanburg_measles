@@ -4,7 +4,7 @@ This tutorial demonstrates how to simulate a measles outbreak in Spartanburg Cou
 
 First, read [GeoPops_Measles.pdf](https://github.com/GeoPopsHub/sc_spartanburg_measles/blob/main/GeoPops_Measles.pdf) for an overview of the GeoPops with Starsim framework as well as the measles outbreak in South Carolina.
 
-Then, you can download the repo and go through the notebooks in order, or try out the interactive Marimo notebooks online. To use Marimo, you simply click on a link below and fork the notebook using a Gmail or GitHub account. Then you can make your own changes without altering the source file. The first notebook explains how GeoPops works and how to make your own population. It needs to be run locally, but you can still go through the other notebooks and Marimo links without doing so.  
+Then, you can download the repo and go through the notebooks in order, or try out the interactive Marimo notebooks online. To use Marimo, simply click on a link below and fork the notebook using a Gmail or GitHub account. Then you can make your own changes without altering the source file. The first notebook explains how GeoPops works and how to make a population. It needs to be run locally, but you can still go through the other notebooks and Marimo links without doing so.  
 
 | Notebook | Description | Marimo |
 | -------- | -------- | -------- | 
