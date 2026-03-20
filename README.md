@@ -1,6 +1,6 @@
 # GeoPops Measles Tutorial
 
-This tutorial demonstrates how to simulate a measles outbreak in Spartanburg County, South Carolina, USA using the synthetic population generator, GeoPops, and the agent-based modeling software, Starsim. 
+This tutorial demonstrates how to simulate a measles outbreak in Spartanburg County, South Carolina, USA using the synthetic population generator, GeoPops, and the agent-based modeling software, [Starsim](https://starsim.org/). 
 
 First, read [GeoPops_Measles.pdf](https://github.com/GeoPopsHub/sc_spartanburg_measles/blob/main/GeoPops_Measles.pdf) for an overview of the GeoPops with Starsim framework as well as the measles outbreak in South Carolina.
 
