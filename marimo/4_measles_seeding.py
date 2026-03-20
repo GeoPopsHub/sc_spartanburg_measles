@@ -1,7 +1,25 @@
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "geopandas==1.1.3",
+#     "ipython==9.11.0",
+#     "marimo>=0.21.1",
+#     "matplotlib==3.10.8",
+#     "numpy==2.4.3",
+#     "pandas==3.0.1",
+#     "scipy==1.17.1",
+#     "seaborn==0.13.2",
+#     "shapely==2.1.2",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.21.1"
-app = marimo.App()
+app = marimo.App(
+    css_file="/usr/local/_marimo/custom.css",
+    auto_download=["html"],
+)
 
 
 @app.cell
@@ -34,7 +52,6 @@ def _():
         Measles,
         Point,
         custom_seeding,
-        display,
         geopops,
         gpd,
         pd,
@@ -52,7 +69,7 @@ def _(mo):
     In this notebook, we'll explore the custom measles class and the impact of seeding infections to a selected school.
 
     ## 4.1 Custom Measles class
-    Here's a refresher on how transmission works from previous notebooks:
+    Here's a refresher of how Starsim transmission works from previous notebooks:
 
     For each time step, Starsim knows who the infectious agents are (sources) and who the susceptible agents are (targets). For every contact (i.e., edge) between agents, there is a probability of infection every time step if one of those agents is infectious. To calculate that probability, Starsim scales the base infectiousness of the disease by:
     * The source’s relative transmissability
@@ -87,7 +104,9 @@ def _(mo):
     | rel_trans_school | Relative transmissibility of ages 5-18 | 1.0 |
     | rel_trans_adults | Relative transmissibility of ages >18| 0.0 |
 
-    [Hopkins Medicine](https://www.hopkinsmedicine.org/health/conditions-and-diseases/measles-what-you-should-know#:~:text=Nine%20out%20of%2010%20unimmunized,room%20if%20they%20are%20unimmunized.) reports 9 out of 10 unimmunized children will contract the virus if they come into contact with an infected individual. So we set the base infectiousness, beta, to be 0.9.
+    [Hopkins Medicine](https://www.hopkinsmedicine.org/health/conditions-and-diseases/measles-what-you-should-know#:~:text=Nine%20out%20of%2010%20unimmunized,room%20if%20they%20are%20unimmunized.) reports 9 out of 10 unimmunized children will contract the virus if they come into contact with an infected individual. So we set the base infectiousness, beta, to be 0.9. The probability of infection for an exposed *unimunized* 5 year old in our model is therefore 0.9. And the probability of infection for an exposed *imunized* 5 year old is 0.027.
+    * Unimunized: beta * rel_sus_school * rel_trans_school * edge_weight equals 0 (0.9 * 1 * 1 * 1 = 0.9)
+    * Imunized: beta * rel_sus_school * (1 - vax_eff) * rel_trans_school * edge_weight equals 0.027 (0.9 * 1 * (1 - 0.97) * 1 * 1 = 0.027)
 
     The [CDC](https://www.cdc.gov/measles/hcp/communication-resources/clinical-diagnosis-fact-sheet.html#:~:text=Measles%20is%20a%20highly%20contagious%20respiratory%20virus,more%20than%20104%C2%B0%20F%20when%20rash%20appears) describes the following progression of illness, which informs dur_exp and dur_inf in the model.
 
@@ -105,9 +124,9 @@ def _(mo):
 
     Initial prevalence is defined with a custom seeding function stored in `measles_geopops.py`. We'll look at adjusting this in following sections.
 
-    First, try changing the parameter values in the cell below to see how they change infection curves.
+    After running the cell below, try changing the parameter values and re-running to see how they change infection curves.
 
-    In the plots, "Infectious" refers to the number of agents currently in the infectious state (I), and "cumulative infections" means the cumulative sum of new infections.
+    Note: In the plots, "Infectious" refers to the number of agents currently in the infectious state (I), and "cumulative infections" means the cumulative sum of new infections.
     """)
     return
 
@@ -115,18 +134,45 @@ def _(mo):
 @app.cell
 def _(Measles, geopops, plot_measles, sc, ss):
     # Load the people object
-    ppl = ss.load('data/pop_export/starsim/ppl_vax.pkl')
-    h = geopops.ForStarsim.GPNetwork(name='homenet', edge_weight=1.0)
-    # Define the networks with edge weights. 
+    ppl = ss.load("data/pop_export/starsim/ppl_vax.pkl")
+
+    # Define the networks with edge weights
     # Assuming same relative edge weights but can change if you want to
-    s = geopops.ForStarsim.GPNetwork(name='schoolnet', edge_weight=1.0)
-    _measles_pars = sc.objdict(beta=0.6, dur_exp=ss.normal(10.0), dur_inf=ss.normal(8.0), p_death=ss.bernoulli(p=0.0), vax_eff=0.97, rel_sus_babies=1.0, rel_sus_young=1.0, rel_sus_school=1.0, rel_sus_adults=0.0, rel_trans_babies=1.0, rel_trans_young=1.0, rel_trans_school=1.0, rel_trans_adults=0.0)
-    sim1 = ss.Sim(pars=sc.objdict(start=0, stop=300, dt=1.0), people=ppl, networks=[h, s], diseases=[Measles(_measles_pars)]).run()
-    res1 = sim1.results  # disease's base infectiousness (scaled by rel_trans, rel_sus, and edge_weight)
-    # Run sim with no quarantine
+    h = geopops.ForStarsim.GPNetwork(name="homenet",
+                                     edge_weight=1.0) # default=1.0
+    s = geopops.ForStarsim.GPNetwork(name="schoolnet",
+                                     edge_weight=1.0) # default=1.0
+
+    # Define disease parameters
+    measles_pars = sc.objdict(
+        beta=0.9, # disease's base infectiousness 
+        dur_exp=ss.normal(10.0), # duration exposed, not contatious, default=10
+        dur_inf=ss.normal(8.0), # duration infectious, contagious, default=8
+        vax_eff=0.97, # vaccine efficacy,
+                      # scales beta by 1-vax_eff, default=0.97
+        rel_sus_babies=1.0, # default=1.0
+        rel_sus_young=1.0, # default=1.0
+        rel_sus_school=1.0, # default=1.0
+        rel_sus_adults=0.0, # default=0.0
+        rel_trans_babies=1.0, # default=1.0
+        rel_trans_young=1.0, # default=1.0
+        rel_trans_school=1.0, # default=1.0
+        rel_trans_adults=0.0, # default=0.0
+        )
+
+    # Run sim
+    sim1 = ss.Sim(
+        pars=sc.objdict(start=0, stop=300, dt=1.0),
+        people=ppl,
+        networks=[h, s],
+        diseases=[Measles(measles_pars)],
+        ).run()
+
     # Store results
+    res1 = sim1.results  
+
     # Plot results
-    plot_measles(sim1, res1)  # duration of exposed state, in this model not infectious, drawn from normal distribution  # duration of infectious state, drawn from normal distribution  # probability of death, drawn from Bernoulli distribution  # effectiveness of vaccine, scales rel_sus by 1-vax_eff  # relative susceptability of ages <2  # relative susceptability of ages 2-4  # relative susceptability of ages 5-17  # relative susceptability of ages >18  # relative transmissability of ages <2  # relative transmissability of ages 2-4  # relative transmissability of ages 5-17  # relative transmissability of ages >18  # use custom Measles model
+    plot_measles(sim1, res1)  
     return h, ppl, res1, s, sim1
 
 
@@ -159,161 +205,294 @@ def _(mo):
     The first measles infections in Spartanburg were [reported at two schools](https://dph.sc.gov/news/measles-update-dph-confirms-locations-spartanburg-county-outbreak-media-briefing-take-place): Fairforest Elementary (public) and Global Academy of South Carolina (private). GeoPops does not currently include private schools or daycares but will in the future. In this section, we find the school code and CBG of Fairforest Elementary. Then we seed infections to agents attending this chool, run a sim, and plot infected by CBG over time.
 
     ### 4.2.1 Find target school
-    To target a certain school in our seeding function we need its school code, which corresponds to the `sch_code` variable in our people object. We can use a file that was downloaded during `geopops.DownloadData()` in `1_run_geopops.ipynb`. `EDGE_GEOCODE_PUBLICSCH_1920.xlsx` comes from NCES data and has every public school with its name and NCES school code. The variable NCESSCH in this file corresponds to the variable sch_code in our Starsim people object and in `pop_export/sch_students.csv`, a GeoPops file listing students by school.
+    To target a certain school in our seeding function we need its school code, which corresponds to the `sch_code` variable in our people object. We can use the file `EDGE_GEOCODE_PUBLICSCH_1920.xlsx` that was downloaded with `geopops.DownloadData()` in `1_run_geopops.ipynb`. This file comes from NCES data and has every public school with its name and NCES school code. The variable `NCESSCH` in this file corresponds to the variable `sch_code` in our Starsim people object and in `pop_export/sch_students.csv`, a GeoPops file listing students by school.
     """)
     return
 
 
 @app.cell
 def _(pd):
-    # Read in list of public schools and filter for Spartanburg County 
-    public_schools = pd.read_excel('data/school/EDGE_GEOCODE_PUBLICSCH_1920.xlsx') # big file, takes a while
-    public_schools = public_schools.loc[(public_schools['CNTY'] == 45083)] # filter for Spartanburg County
-    public_schools['NAME'].unique() # Print out school names
+    # Read in list of public schools (big file, takes a while)
+    public_schools = pd.read_excel('data/school/EDGE_GEOCODE_PUBLICSCH_1920.xlsx') 
+
+    # Filter for Spartanburg County
+    public_schools = public_schools.loc[(public_schools['CNTY'] == 45083)] 
+
+    # Print out school names
+    public_schools['NAME'].unique() 
     return (public_schools,)
 
 
 @app.cell
 def _(public_schools):
-    # Now filter EDGE_GEOCODE_PUBLICSCH_1920.xlsx for Fairforest Elementary and get it's NCESSCH number which corresponds to sch_code
-    school_name = 'Fairforest Elementary'
+    # Now filter for Fairforest Elementary
+    # Get its NCESSCH number which corresponds to sch_code
+    school_name = 'Boiling Springs High'
     school_info = public_schools.loc[public_schools['NAME'] == school_name]
-    school_info # Print info for selected school
+
+    # Print info for selected school
+    school_info 
     return school_info, school_name
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Now let's figure out what CBG that school is located in using a shapefile already downloaded when you made the GeoPops population. We use this for plotting later. We can cross reference the LAT and LON in the school_info dataframe with the geography in the SC CBG shapefile that was downloaded in `1_run_geopops.ipynb`. Copy and paste the code under `NCESSCH` above into `sch_code` below.
+    The `sch_code` for Fairforest Elementary is 450363001025. Now let's figure out what CBG that school is located in using the shapefile `tl_2019_45_bg.shp`, which was already downloaded into the geo folder when you made the GeoPops population in `1_run_geopops.ipynb`. The CBG code is used for plotting later. To find it, we can cross reference the LAT and LON in the `school_info` dataframe with the `geography` column in the shapefile. Copy and paste the school code under `NCESSCH` from the dataframe in the previous cell into `sch_code` below. If using Marimo, you need to delete the commas.
     """)
     return
 
 
 @app.cell
-def _(Point, gpd, school_info):
-    _geo_shp = gpd.read_file('data/geo/tl_2019_45_bg.shp')  # This file is already downloaded into geo folder
-    _geo_shp['cbg_geocode'] = _geo_shp['GEOID'].astype(int)
-    sch_code = 450363001025
-    sch_geo = gpd.sjoin(gpd.GeoDataFrame(school_info.loc[school_info['NCESSCH'] == sch_code], geometry=school_info.loc[school_info['NCESSCH'] == sch_code].apply(lambda r: Point(r['LON'], r['LAT']), axis=1), crs='EPSG:4326').to_crs(_geo_shp.crs), _geo_shp[['cbg_geocode', 'geometry']], how='left', predicate='within')['cbg_geocode'].iloc[0]
-    print('CBG of selected school:', sch_geo)
-    return (sch_geo,)
+def _(Point, gpd, school_info, school_name):
+    sch_code = 450351001000
+
+    # This file is already downloaded into geo folder
+    geo_shp = gpd.read_file('data/geo/tl_2019_45_bg.shp') # This file is already downloaded into geo folder
+    geo_shp['cbg_geocode'] = geo_shp['GEOID'].astype(int)
+
+    sch_geo = (
+        gpd.sjoin(
+            gpd.GeoDataFrame(
+                school_info.loc[school_info["NCESSCH"] == sch_code],
+                geometry=school_info.loc[school_info["NCESSCH"] == sch_code]
+                        .apply(lambda r: Point(r["LON"], r["LAT"]), axis=1),
+                crs="EPSG:4326",
+            ).to_crs(geo_shp.crs),
+            geo_shp[["cbg_geocode", "geometry"]],
+            how="left",
+            predicate="within",
+        )["cbg_geocode"].iloc[0]
+    )
+
+    print(f'School code of {school_name}:', sch_code)
+    print(f'CBG of {school_name}:', sch_geo)
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### 4.2.2 Custom seeding function
-    Now we know that the sch_code for Fairforest Elementary is 450363001025. The `custom_seeding()` function is stored in `measles_geopops.py`. Here's the logic: identify agents under `max_age` at school `sch_code` and assign `n_seeds` of them to start the simulation exposed. We limit the age to avoid seeding teachers with infections. The cell below shows how you can adjust the function to seed infections to different schools. It starts with the default values for max_age, sch_codes, and n_seeds. Trying adjusting these and see how it changes the results. You can go back to section 4.2.1 to target a different school.
+    Now we know that the sch_code for Fairforest Elementary is 450363001025 and its CBG is 450830228022. The `custom_seeding()` function is stored in `measles_geopops.py`. Here's the logic: identify agents under `max_age` at school `sch_code` and assign `n_seeds` of them to start the simulation exposed. We limit the age to avoid seeding teachers with infections because in our toy example, adults can't get infected.
+
+    The cell below shows how you can adjust the function to seed infections to different schools. It starts with the default values: max_age=18, sch_codes=[450363001025], and n_seeds=[30]. Try adjusting `n_seeds` below and compare results to your previous plots. Then, go back to section 4.2.1 and try targeting a different school.
     """)
     return
 
 
 @app.cell
 def _(Measles, custom_seeding, h, plot_measles, ppl, s, sc, school_name, ss):
-    sch_code_1 = 450363001025
-    _seeding_fn = custom_seeding(max_age=18, sch_codes=[sch_code_1], n_seeds=30)
+    _sch_code = 450348000060, # default=450363001025
+
+    _seeding_fn = custom_seeding(max_age=18, # default=18
+                                sch_codes=[_sch_code], # defined above
+                                n_seeds=30) # default=30
+
     _measles_pars = sc.objdict(init_prev=ss.bernoulli(p=_seeding_fn))
-    sim2 = ss.Sim(pars=sc.objdict(start=0, stop=300, dt=1.0), people=ppl, networks=[h, s], diseases=[Measles(_measles_pars)]).run()
+
+    sim2 = ss.Sim(
+        pars=sc.objdict(start=0, stop=300, dt=1.0),
+        people=ppl,
+        networks=[h, s],
+        diseases=[Measles(_measles_pars)],
+        ).run()
+
     res2 = sim2.results
-    plot_measles(sim2, res2, label=f'Seeded infections in {school_name}')
-    return (sch_code_1,)
+
+    plot_measles(sim2, res2, label=f"Seeded infections at {school_name}")
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 4.3 Spatial Spread
-    We also want to see how seeding infections at different schools impacts spatial spread of the disease. Because we know where each agent lives, we can track infections by geography (down to CBG). The GeoPops class `SubgroupTracking()` allows you to track infections by any of your agent attributes as long as they are a state in the people object. It takes the input arguments `subgroup`, `outcome`, and `name`. The outcome should be one of the disease states, so for measles, it could be susceptible, exposed, infected, or recovered. Then you can pass it into a sim as an ss.Analyzer() using its name.
+    We also want to see how seeding infections at different schools impacts spatial spread of the disease. Because we know where each agent lives, we can track infections by geography (down to CBG). The GeoPops class `SubgroupTracking()` allows you to track infections by any of your agent attributes (`agegroup`, `commuter_income_category`, `race_ethnicity`) as long as it is a state in the People object. `SubgroupTracking()` takes the input arguments `subgroup`, `outcome`, and `name`. The `outcome` should be one of the disease compartments, so for measles, it could be `susceptible`, `exposed`, `infected`, or `recovered`. Then you can pass it into a sim as an ss.Analyzer() using the `name`.
 
-    In the next cell we combine the custom seeding function and the geo_tracking analyzer into a sim and run it. Then in the subsequent cell, we plot infected by CBG over time. After running both cells once, try picking a different school in section 4.2.1. Then try running the cells below again and to how seeding a different school changes spatial spread.
+    In the next cell we combine the custom seeding function and a `geo_tracking` analyzer into a sim and run it. Then there is a bunch of code to plot an animation of infected by CBG over time. Run the cell making sure that `_sch_geo` (the school's CBG) corresponds to the `sch_code` for your target school. Check out the animation, then try targeting a different school. You can select a school in 4.2.1 or copy and paste from one of these combos.
+
+    | school_name | sch_code | sch_geo |
+    | -------- | -------- | -------- |
+    | Fairforest Elementary | 450363001025 | 450830228022 |
+    | Landrum Middle | 450348000060 | 450830226002 |
+    | Boiling Springs High | 450351001000 | 450830224051 |
     """)
     return
 
 
 @app.cell
 def _(
+    FuncAnimation,
+    Image,
     Measles,
     custom_seeding,
     geopops,
+    gpd,
     h,
     plot_measles,
+    plt,
     ppl,
     s,
     sc,
-    sch_code_1,
     ss,
 ):
-    geo_tracking = geopops.ForStarsim.SubgroupTracking(subgroup='cbg_geocode', outcome='infected', name='geo_tracking')
-    _seeding_fn = custom_seeding(max_age=18, sch_codes=[sch_code_1], n_seeds=30)
+    # Make sure these correspond to the same school!
+    _school_name = "Landrum Middle"
+    _sch_code = 450348000060 
+    _sch_geo = 450830226002 
+
+    # Define subgroup tracking Analyzer
+    geo_tracking = geopops.ForStarsim.SubgroupTracking(
+        subgroup="cbg_geocode", 
+        outcome="infected", 
+        name="geo_tracking"
+        )
+
+    # Define seeding function parameters
+    _seeding_fn = custom_seeding(max_age=18, # default=18
+                                 sch_codes=[_sch_code], # defined above
+                                 n_seeds=30) # default=30
+
+    # Add seeding function to measles parameters
     _measles_pars = sc.objdict(init_prev=ss.bernoulli(p=_seeding_fn))
-    sim3 = ss.Sim(pars=sc.objdict(start=0, stop=300, dt=1.0), people=ppl, networks=[h, s], diseases=[Measles(_measles_pars)], analyzers=[geo_tracking]).run()
+
+    # Run sim
+    sim3 = ss.Sim(
+        pars=sc.objdict(start=0, stop=300, dt=1.0),
+        people=ppl,
+        networks=[h, s],
+        diseases=[Measles(_measles_pars)],
+        analyzers=[geo_tracking],
+        ).run()
+
+    # Store results
     res3 = sim3.results
+
+    # Plot results
     plot_measles(sim3, res3)
-    return (sim3,)
 
+    ### Animation plotting ###
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    Run the next cell to plot spatial spread.
-    """)
+    # Get population per CBG
+    # if you want to compute per pop infection counts
+    ppl_df = sim3.people.to_df()
+    ppl_df = ppl_df.groupby("cbg_geocode").size().reset_index(name="pop")
+    ppl_df = ppl_df.loc[
+        ppl_df["cbg_geocode"] != 0
+    ]  # drop dummy agents who live outside the geo area
+
+    # Get infected by CBG with analyzer
+    geo_df = sim3.analyzers[0].get_subgroup_data()
+    geo_df = geo_df.loc[
+        geo_df["cbg_geocode"] != 0
+    ].copy()  # drop dummy agents who live outside the geo area
+
+    # Merge infected and pop by CBG 
+    geo_df = geo_df.merge(ppl_df, on="cbg_geocode", how="left").set_index("cbg_geocode")
+
+    # Merge with shapefil
+    _geo_shp = gpd.read_file("data/geo/tl_2019_45_bg.shp")
+    _geo_shp["cbg_geocode"] = _geo_shp["GEOID"].astype(int)
+    _geo_shp = _geo_shp.merge(geo_df, on="cbg_geocode", how="left")
+
+    # Get geometry for the seeded school CBG
+    target_geom = _geo_shp.loc[
+        _geo_shp["cbg_geocode"] == _sch_geo, "geometry"
+    ].iloc[0]
+
+    cx, cy = target_geom.centroid.x, target_geom.centroid.y
+
+    # Columns to animate
+    cols = list(geo_df.columns[:-1])  # exclude 'pop'
+    frame_cols = cols[::2]  # every other frame to keep the GIF smaller
+
+    # Fixed color scale across frames
+    vmin = _geo_shp[frame_cols].min().min()
+    vmax = _geo_shp[frame_cols].max().max()
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+
+    # Draw first frame once so the colorbar is created
+    _geo_shp.plot(
+        column=frame_cols[0],
+        cmap="Blues",
+        legend=True,
+        ax=ax,
+        edgecolor="black",
+        linewidth=0.5,
+        vmin=vmin,
+        vmax=vmax,
+    )
+
+    ax.set_title(f"Infected by CBG\n{frame_cols[0]}", fontsize=16, fontweight="bold")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.annotate(
+        text=f"CBG of {_school_name}",
+        xy=(cx, cy),
+        xytext=(-0.12, 0.5),
+        textcoords="axes fraction",
+        arrowprops=dict(arrowstyle="->", color="black", linewidth=1.5),
+        fontsize=10,
+        ha="right",
+        va="center",
+        annotation_clip=False,
+    )
+
+    # Label the colorbar
+    cbar = fig.get_axes()[1]
+    cbar.set_label("Infected")
+
+    def update(frame):
+        ax.clear()
+        col = frame_cols[frame]
+
+        _geo_shp.plot(
+            column=col,
+            cmap="Blues",
+            legend=False,
+            ax=ax,
+            edgecolor="black",
+            linewidth=0.5,
+            vmin=vmin,
+            vmax=vmax,
+        )
+
+        ax.set_title(f"Infected by CBG\n{col}", fontsize=16, fontweight="bold")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.annotate(
+            text=f"CBG of {_school_name}",
+            xy=(cx, cy),
+            xytext=(-0.12, 0.5),
+            textcoords="axes fraction",
+            arrowprops=dict(arrowstyle="->", color="black", linewidth=1.5),
+            fontsize=10,
+            ha="right",
+            va="center",
+            annotation_clip=False,
+        )
+
+    plt.tight_layout()
+
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(frame_cols),
+        interval=200,
+        repeat=True,
+    )
+
+    ani.save("map_animation.gif", writer="pillow", fps=4)
+    plt.close(fig)
+
+    Image("map_animation.gif", width=700)
     return
 
 
 @app.cell
-def _(FuncAnimation, Image, display, gpd, plt, sch_geo, sim3):
-    # Get population per CBG
-    ppl_df = sim3.people.to_df()
-    ppl_df = ppl_df.groupby('cbg_geocode').size().reset_index()
-    ppl_df = ppl_df.loc[ppl_df['cbg_geocode'] != 0]  # drop dummy agents who live outside the geo area and have cbg_geocode = 0
-    ppl_df = ppl_df.rename(columns={0: 'pop'})
-    geo_df = sim3.analyzers[0].get_subgroup_data()
-    # Get infected by tract with analyzer
-    geo_df = geo_df.loc[geo_df['cbg_geocode'] != 0].set_index('cbg_geocode')  # Returns second analyzer (cbg_tracking) as dataframe
-    geo_df = geo_df.merge(ppl_df, on='cbg_geocode', how='left').set_index('cbg_geocode')  # drop dummy agents who live outside the geo area and have cbg_geocode = 0
-    _geo_shp = gpd.read_file('data/geo/tl_2019_45_bg.shp')
-    _geo_shp['cbg_geocode'] = _geo_shp['GEOID'].astype(int)
-    # Calculate infected per 1000 population
-    # for col in geo_df.columns[:-1]:
-    #     geo_df[col] = geo_df[col] / geo_df['pop'] * 1000
-    # geo_df.drop(columns=['pop'], inplace=True)
-    _geo_shp = _geo_shp.merge(geo_df, on='cbg_geocode', how='left')
-    # Get shapefile for CBGs in SC
-    # This file is already downloaded in `1_run_geopops.ipynb` into geo folder
-    target_geom = _geo_shp.loc[_geo_shp['cbg_geocode'] == sch_geo, 'geometry'].iloc[0]  # This file is already downloaded in `1_run_geopops.ipynb` into geo folder
-    cx, cy = (target_geom.centroid.x, target_geom.centroid.y)
-    cols = list(geo_df.columns[:-1])
-    # Merge with analyzer results
-    vmin = _geo_shp[cols].min().min()
-    vmax = _geo_shp[cols].max().max()
-    # Get centroid of target tract
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    def update(frame):
-    # Columns you want to animate
-        ax.clear()
-        col = cols[frame]
-    # Keep color scale fixed across frames so colors are comparable
-        _geo_shp.plot(column=col, cmap='Blues', legend=False, ax=ax, edgecolor='black', linewidth=0.5, vmin=vmin, vmax=vmax)
-        ax.set_title(f'Infected by CBG\n{col}', fontsize=20, fontweight='bold')
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.annotate(text='CBG of seeded school', xy=(cx, cy), xytext=(-0.12, 0.5), textcoords='axes fraction', arrowprops=dict(arrowstyle='->', color='black', linewidth=1.5), fontsize=10, ha='right', va='center', annotation_clip=False)
-    _geo_shp.plot(column=cols[0], cmap='Blues', legend=True, ax=ax, edgecolor='black', linewidth=0.5, vmin=vmin, vmax=vmax)
-    ax.set_title(f'Infected CBG\n{cols[0]}', fontsize=20, fontweight='bold')
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.annotate(text=str(sch_geo), xy=(cx, cy), xytext=(-0.12, 0.5), textcoords='axes fraction', arrowprops=dict(arrowstyle='->', color='black', linewidth=1.5), fontsize=10, ha='right', va='center', annotation_clip=False)  # Plot current frame
-    cbar = fig.get_axes()[1]
-    cbar.set_label('Infected')
-    plt.tight_layout()
-    plt.close(fig)  # avoid stacking a new legend/colorbar every frame
-    ani = FuncAnimation(fig, update, frames=len(cols), interval=100, repeat=True)
-    ani.save('map_animation.gif', writer='pillow', fps=8)
-    # Draw first frame once so we can make one shared colorbar
-    # Grab the colorbar axis created by the first plot
-    display(Image('map_animation.gif'))  # Add arrow annotation  # outside left side of axes
+def _():
     return
 
 

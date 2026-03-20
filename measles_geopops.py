@@ -17,11 +17,11 @@ class Measles(ss.SIR):
         
         # Define parameters
         self.define_pars(
-                          beta      = 0.6, # disease's base infectiousness (scaled by rel_trans, rel_sus, and edge_weight) # see custom_seeding function below
+                          beta      = 0.9, # disease's base infectiousness (scaled by rel_trans, rel_sus, and edge_weight) # see custom_seeding function below
                           init_prev = ss.bernoulli(p=custom_seeding()), # Initial prevalence, drawn from Bernoulli distribution
                           dur_exp   = ss.normal(10.0), # duration of exposed state, in this model not infectious, drawn from normal distribution
                           dur_inf   = ss.normal(8.0), # duration of infectious state, drawn from normal distribution
-                          p_death   = ss.bernoulli(p=0.001), # probability of death, drawn from Bernoulli distribution
+                          p_death   = ss.bernoulli(p=0.0), # probability of death, drawn from Bernoulli distribution
                           vax_eff   = 0.97, # effectiveness of vaccine, scales rel_sus by 1-vax_eff
                           rel_sus_babies   = 1.0, # relative susceptability of ages <2
                           rel_sus_young    = 1.0, # relative susceptability of ages 2-5
