@@ -17,4 +17,13 @@ Then, you can download the repo and go through the notebooks in order, or try ou
 ## GeoPops with Starsim
 ![GeoPops Starsim](GeoPops_Starsim.jpeg)
 
-*GeoPops Starsim overview diagram*
+The **GeoPops with Starsim** framework enables detailed scenario modeling because for every agent, we know:
+* Several demographic characteristics (age, gender, race/ethnicity)
+* Where they live and where they go to school or work
+* Who infected them, when, and where (home, school, work, GQ)
+* When they transition disease compartments (e.g., S, I, R)
+
+Think of the framework like a puzzle. Each puzzle piece is a different model component (e.g., people, networks, disease). By customizing the logic and parameters of each component, you determine the how the puzzle pieces fit together and what picture they make.
+
+All data used to make a GeoPops population are publicly available. All GeoPops and Starsim code is open source. AI-coding assistants can be super helpful to explain how things work and how to implement your own customizations.
+
