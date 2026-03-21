@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geopops"
+version = "0.1.4.post2"
+description = "GeoPops"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "curl-cffi>=0.13.0",
+  "geopandas",
+  "numpy<2.3",
+  "pandas>=2.3.2",
+  "requests>=2.32.5",
+  "shapely",
+  "starsim>=3.0.3",
+  "urllib3>=2.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ipykernel",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# patterns are relative to the *package root* (src/geopops)
+[tool.setuptools.package-data]
+geopops = ["geocorr/*", "julia/*", "config.json"]
