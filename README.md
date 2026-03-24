@@ -27,3 +27,5 @@ Think of the framework like a puzzle. Each puzzle piece is a different model com
 
 All data used to make a GeoPops population are publicly available. All GeoPops and Starsim code is open source. AI-coding assistants can be super helpful to explain how things work and how to implement your own customizations.
 
+In this tutorial, we’ll simulate a measles outbreak in Spartanburg County, SC and test different quarantine strategies. We’ll demonstrate how to seed initial infections by school and track infections by Census Block Group (CBG) over time. Don’t be intimidated by the code! All the important stuff is in the text and figures!
+

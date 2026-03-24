@@ -13,8 +13,6 @@ def _():
 
 @app.cell
 def _():
-    import sys, platform, pathlib
-    sys.path.insert(0, str(pathlib.Path().resolve().parent.parent / "src"))
     import geopops
     import pandas as pd
     import matplotlib.pyplot as plt
