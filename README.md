@@ -10,7 +10,7 @@ Then, you can download the repo and go through the notebooks in order, or try ou
 | -------- | -------- | -------- | 
 | 1_run_geopops.ipynb | Make a GeoPops population of Spartanburg, SC | N/A |
 | 2_explore_people.ipynb | Explore Starsim People object and compare GeoPops population to real Census data | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_Z9nu2t6jQpk8kY1FF5YTVw) |
-| 3_explore_networks.ipynb | Run a simple SIR model and see what happends when you change network edge weights | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_PedmQ3ANiHAYCcAAKhJjwS) |
+| 3_explore_networks.ipynb | Run a simple SIR model and see what happends when you change network edge weights | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_jSd7sQou61oQUNSFZNYC1H) |
 | 4_measles_seeding.ipynb | Explore the custom measles model, seed infections to a specific school, and observe spatial spread | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_7bWLdVBk4GGm9sRE9wmS1S) |
 | 5_measles_quarantine.ipynb | Eplore the custom measles model and test four quarantine strategies:<br>- Infectious individual only<br>- Infectious individual and siblings<br>- Infectious individual and contacts<br>- Entire school of infectious individual | [![Open in molab](https://molab.marimo.io/molab-shield.svg)](https://molab.marimo.io/notebooks/nb_pMKcSuZQ7nRSVsih3EyB6u)|
 
