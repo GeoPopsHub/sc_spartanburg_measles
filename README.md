@@ -7,7 +7,7 @@ This tutorial demonstrates how to simulate a measles outbreak in Spartanburg Cou
 4. Run an Starsim ABM with infections seeded to a specific school and observe spatial spread, and
 5. Test different quarantine strategies and track outcomes by age group. 
 
-Think of this tutorial and measles example as a starting point of an iterative community-building modeling exercise. GeoPops and Starsim provide a customizable framework for a detailed, context-specific scenario model, but this version is the first draft! There is still a lot that can be added in collaboration with public health researchers and officials on the ground to make the population and model more realistic. The [GeoPops_Measles.pdf](https://github.com/GeoPopsHub/sc_spartanburg_measles/blob/main/GeoPops_Measles.pdf) provides an overview of the GeoPops with Starsim framework as well as the measles outbreak in South Carolina.
+Think of this tutorial and measles example as a starting point of an iterative, community-building modeling exercise. GeoPops and Starsim provide a customizable framework for a detailed, context-specific scenario model, but this version is the first draft! There is still a lot that can be added in collaboration with public health researchers and officials on the ground to make the population and model more realistic. The [GeoPops_Measles.pdf](https://github.com/GeoPopsHub/sc_spartanburg_measles/blob/main/GeoPops_Measles.pdf) provides an overview of the GeoPops with Starsim framework as well as the measles outbreak in South Carolina.
 
 ## GeoPops with Starsim
 ![GeoPops Starsim](GeoPops_Measles.jpeg)
