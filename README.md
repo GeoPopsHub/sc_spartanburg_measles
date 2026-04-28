@@ -22,6 +22,8 @@ Think of the framework like a puzzle. Each puzzle piece is a different model com
 
 All GeoPops and Starsim code is open source, enabling users to customize populations, diseases, and interventions for their own research questions. Our aim is to build capacity of modelers and increase decision-making relevance with context-specific simulations using open-source, user-friendly tools.
 
+## Interactive Notebooks
+
 You can download the repo and go through the notebooks in order, or try out the interactive Marimo notebooks online. To use Marimo, simply click on a link below and fork the notebook using a Gmail or GitHub account. Then you can make your own changes without altering the source file. The first notebook explains how GeoPops works and how to make a population. It needs to be run locally, but you can still go through the other notebooks and Marimo links without doing so.  
 
 | Notebook | Description | Marimo |
