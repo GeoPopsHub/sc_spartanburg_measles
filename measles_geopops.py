@@ -2,7 +2,7 @@ import starsim as ss
 import numpy as np
 import matplotlib.pyplot as plt
 
-__all__ = ['Measles', 'custom_seeding', 'plot_measles', 'Quarantine_inf', 'get_children', 'Quarantine_sib', 'Quarantine_contacts', 'CloseSchools']
+__all__ = ['Measles', 'custom_seeding', 'plot_measles', 'Isolate_inf', 'get_children', 'Quarantine_sib', 'Quarantine_contacts', 'CloseSchools', 'Quarantine_UnVax']
 
 
 class Measles(ss.SIR):
@@ -17,12 +17,13 @@ class Measles(ss.SIR):
         
         # Define parameters
         self.define_pars(
-                          beta      = 0.9, # disease's base infectiousness (scaled by rel_trans, rel_sus, and edge_weight) # see custom_seeding function below
+                          beta      = 0.3, #ss.perday(0.9), # disease's base infectiousness (scaled by rel_trans, rel_sus, and edge_weight) # see custom_seeding function below
                           init_prev = ss.bernoulli(p=custom_seeding()), # Initial prevalence, drawn from Bernoulli distribution
                           dur_exp   = ss.normal(10.0), # duration of exposed state, in this model not infectious, drawn from normal distribution
                           dur_inf   = ss.normal(8.0), # duration of infectious state, drawn from normal distribution
                           p_death   = ss.bernoulli(p=0.0), # probability of death, drawn from Bernoulli distribution
-                          vax_eff   = 0.97, # effectiveness of vaccine, scales rel_sus by 1-vax_eff
+                          vax_eff_d1 = 0.93, # effectiveness of 1 vaccine dose, applied to vaccinated agents aged 1; scales rel_sus by 1-vax_eff_d1
+                          vax_eff_d2 = 0.97, # effectiveness of 2 vaccine doses, applied to vaccinated agents aged 2+; scales rel_sus by 1-vax_eff_d2
                           rel_sus_babies   = 1.0, # relative susceptability of ages <2
                           rel_sus_young    = 1.0, # relative susceptability of ages 2-5
                           rel_sus_school   = 1.0, # relative susceptability of ages 5-18    
@@ -119,9 +120,13 @@ class Measles(ss.SIR):
         # agents who life outside geo area but commute in for work. Assume they are all adults and there fore not susceptible
         self.rel_sus[dummy] = 0.0 
         
-        # If vaccinated (vax_status == 1.0), reduce susceptibility 
-        vax = (self.sim.people.vax_status == 1.0)
-        self.rel_sus[vax] *= (1-self.pars.vax_eff)
+        # If vaccinated (vax_status == 1.0), reduce susceptibility by number of doses.
+        # Age 0 is too young for MMR (vax_status is 0 in ppl_vax.pkl); the age >= 1 check below also guards against older pickles.
+        vax    = np.asarray(self.sim.people.vax_status == 1.0)
+        vax_d1 = vax & (ages >= 1) & (ages < 2) & ~dummy  # age 1: one dose
+        vax_d2 = vax & (ages >= 2) & ~dummy               # age 2+: two doses
+        self.rel_sus[vax_d1] *= (1-self.pars.vax_eff_d1)
+        self.rel_sus[vax_d2] *= (1-self.pars.vax_eff_d2)
 
         # Optionally, adjust relative transmissibility similarly
         self.rel_trans[babies] = self.pars.rel_trans_babies
@@ -192,7 +197,7 @@ def get_children(ppl):
     sim = ss.Sim(people=ppl).init()
     ppl_df = sim.people.to_df()
     children = ppl_df.loc[ppl_df['age'] < 18].copy()
-    children = children.loc[children['household'] != 0, ['uid', 'household','sch_code','age']]
+    children = children.loc[children['household'] != 0, ['uid', 'household', 'sch_code', 'age', 'vax_status']]
     children['uid'] = children['uid'].astype(int)
     children['household'] = children['household'].astype(int)
     children['sch_code'] = children['sch_code'].astype(int)
@@ -270,7 +275,7 @@ def plot_measles(sim, res, label=None):
     age_inf = age_inf.reindex(order, fill_value=0)
 
     ax.bar(age_inf.index, age_inf.values, color='#1a365d', edgecolor='none')
-    ax.set_title(f'Cum infections by age\n{label}')
+    ax.set_title(f'Cumulative infections by age\n{label}')
     ax.set_xlabel('Age group')
     ax.set_ylabel('Count')
     ax.tick_params(axis='x', rotation=45)
@@ -303,17 +308,17 @@ def plot_measles(sim, res, label=None):
     fig.tight_layout()
     plt.show()
 
-class Quarantine_inf(ss.Intervention):
+class Isolate_inf(ss.Intervention):
     def __init__(self, *args,
                  quarantine_start=0,
                  days_since_infectious=1,
-                 dur_quarantine=5,
+                 dur_isolation=5,
                  compliance=1.0,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.quarantine_start = quarantine_start
         self.days_since_infectious = days_since_infectious
-        self.dur_quarantine = dur_quarantine
+        self.dur_isolation = dur_isolation
         self.compliance = compliance
 
         self.school_edges = []
@@ -338,7 +343,7 @@ class Quarantine_inf(ss.Intervention):
         net.edges.beta[:] = self._beta0
 
         # Before quarantine_start or if quarantine disabled: record and return
-        if ti < self.quarantine_start or self.dur_quarantine <= 0:
+        if ti < self.quarantine_start or self.dur_isolation <= 0:
             self.school_edges.append(np.count_nonzero(net.edges.beta))
             self.quarantined.append(0)  # nobody quarantining
             return
@@ -350,7 +355,7 @@ class Quarantine_inf(ss.Intervention):
         quarantined = (
             infected
             & (days_since_infected >= self.days_since_infectious)
-            & (days_since_infected < self.days_since_infectious + self.dur_quarantine)
+            & (days_since_infected < self.days_since_infectious + self.dur_isolation)
         )
         quarantined_uids = ss.uids(quarantined)
 
@@ -423,7 +428,7 @@ class Quarantine_sib(ss.Intervention):
         days_since_infected = ti - ti_infected
         self.infected_uids.append(np.where(infected)[0])
 
-        # Base infected kids to quarantine (exactly like Quarantine_inf)
+        # Base infected kids to quarantine (exactly like Isolate_inf)
         base_quarantined = (
             infected
             & (days_since_infected >= self.days_since_infectious)
@@ -458,6 +463,13 @@ class Quarantine_sib(ss.Intervention):
             else:
                 comply = np.random.random(sib_only_uids.size) < self.compliance
                 actually_quarantined_uids = np.union1d(index_uids, sib_only_uids[comply]).astype(int)
+
+        # Exclude vaccinated siblings from quarantine, but always keep infected index cases
+        if actually_quarantined_uids.size > 0:
+            sib_quarantine_uids = np.setdiff1d(actually_quarantined_uids, index_uids)
+            unvaccinated_uids = self.children.loc[self.children['vax_status'] != 1, 'uid'].to_numpy(dtype=int)
+            sib_quarantine_uids = sib_quarantine_uids[np.isin(sib_quarantine_uids, unvaccinated_uids)]
+            actually_quarantined_uids = np.union1d(index_uids, sib_quarantine_uids).astype(int)
 
         self.quarantined_uids.append(actually_quarantined_uids)
 
@@ -572,6 +584,13 @@ class Quarantine_contacts(ss.Intervention):
         else:
             comply = np.random.random(contact_only_uids.size) < self.compliance
             quarantined_uids = np.union1d(index_uids, contact_only_uids[comply]).astype(int)
+
+        # Exclude vaccinated contacts from quarantine, but always keep infectious index cases
+        if quarantined_uids.size > 0:
+            contact_quarantine_uids = np.setdiff1d(quarantined_uids, index_uids)
+            unvaccinated_uids = children.loc[children['vax_status'] != 1, 'uid'].to_numpy(dtype=int)
+            contact_quarantine_uids = contact_quarantine_uids[np.isin(contact_quarantine_uids, unvaccinated_uids)]
+            quarantined_uids = np.union1d(index_uids, contact_quarantine_uids).astype(int)
 
         self.quarantined.append(int(quarantined_uids.size))
 
@@ -720,5 +739,120 @@ class CloseSchools(ss.Intervention):
 
         # --- 5) Track active school edges ---
 
+        self.school_edges.append(int(np.count_nonzero(beta)))
+        return
+
+
+class Quarantine_UnVax(ss.Intervention):
+    def __init__(self, *args,
+                 days_since_infectious=1,
+                 days_quarantine=7,
+                 children_df=None,
+                 **kwargs):
+        """
+        Quarantine only unvaccinated students in the same school as infectious students.
+
+        Similar targeting behavior to CloseSchools, but:
+        - only unvaccinated students in affected schools are quarantined
+        - infectious index students are always quarantined
+        - school contacts are restored only after there are no longer infected
+          individuals in that school
+        """
+        super().__init__(*args, **kwargs)
+        self.days_since_infectious = days_since_infectious
+        self.days_quarantine = days_quarantine
+        self.children = children_df
+
+        self.school_edges = []
+        self.quarantined = []
+        self._uid_to_school = None
+        self._school_to_unvax_uids = None
+        self._beta0 = None
+
+    def init_pre(self, sim):
+        super().init_pre(sim)
+        if self.children is None:
+            raise RuntimeError("Quarantine_UnVax requires children_df with columns ['uid', 'sch_code', 'vax_status'].")
+
+        df = self.children.copy()
+        df = df.dropna(subset=['sch_code'])
+        df['uid'] = df['uid'].astype(int)
+        df['sch_code'] = df['sch_code'].astype(int)
+
+        # uid -> school for infectious-student school lookup
+        self._uid_to_school = dict(zip(df['uid'].values, df['sch_code'].values))
+
+        # school -> unvaccinated student uids in that school
+        unvax = df[df['vax_status'] != 1]
+        self._school_to_unvax_uids = {
+            sch: grp['uid'].to_numpy(dtype=int)
+            for sch, grp in unvax.groupby('sch_code')
+        }
+
+        net = sim.networks['schoolnet']
+        self._beta0 = net.edges.beta.copy()
+        return
+
+    def step(self):
+        sim = self.sim
+        net = sim.networks['schoolnet']
+        ti = sim.ti
+
+        p1 = net.edges.p1
+        p2 = net.edges.p2
+        beta = net.edges.beta
+
+        # Restore baseline each step before applying intervention
+        if self._beta0 is None:
+            self._beta0 = beta.copy()
+        beta[:] = self._beta0
+
+        infected = sim.people.measles.infected
+        ti_infected = sim.people.measles.ti_infected
+        days_since_infected = ti - ti_infected
+
+        # Infectious index students that should trigger school-level quarantine.
+        # No upper time bound here: affected schools remain active until there
+        # are no infected individuals left in that school.
+        infectious_index = (
+            infected
+            & (days_since_infected >= self.days_since_infectious)
+        )
+        index_uids = np.asarray(ss.uids(infectious_index), dtype=int)
+
+        # Schools active under intervention today are exactly those that have
+        # currently infected index students.
+        active_schools = {
+            self._uid_to_school[int(uid)]
+            for uid in index_uids
+            if int(uid) in self._uid_to_school
+        }
+
+        # Collect only unvaccinated uids in those schools
+        if active_schools:
+            targeted_lists = [
+                self._school_to_unvax_uids[sch]
+                for sch in active_schools
+                if sch in self._school_to_unvax_uids
+            ]
+            if targeted_lists:
+                targeted_uids = np.unique(np.concatenate(targeted_lists))
+            else:
+                targeted_uids = np.empty(0, dtype=int)
+        else:
+            targeted_uids = np.empty(0, dtype=int)
+
+        # Infectious index students also quarantine even if vaccinated.
+        if index_uids.size > 0:
+            targeted_uids = np.union1d(targeted_uids, index_uids).astype(int)
+
+        self.quarantined.append(int(targeted_uids.size))
+
+        if targeted_uids.size > 0:
+            mask_disable = np.isin(p1, targeted_uids) | np.isin(p2, targeted_uids)
+        else:
+            mask_disable = np.zeros(len(p1), dtype=bool)
+
+        beta[mask_disable] = np.zeros_like(beta[mask_disable])
         self.school_edges.append(int(np.count_nonzero(beta)))
         return
