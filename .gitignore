@@ -1,0 +1,66 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+
+data_other/
+code_testing/
+
+# Ignore all data by default; then un-ignore only what you want to publish
+data/
+!data/
+data/*
+
+!data/config_parameters.xlsx
+!data/config.json
+!data/folders_files_tree.rtf
+!data/sch_vax_rates.csv
+!data/sch_vax_rates.ipynb
+
+# ---- geo: keep only the tl_2019_45_bg shapefile components ----
+!data/geo/
+data/geo/*
+!data/geo/tl_2019_45_bg.shp
+!data/geo/tl_2019_45_bg.shx
+!data/geo/tl_2019_45_bg.dbf
+!data/geo/tl_2019_45_bg.prj
+!data/geo/tl_2019_45_bg.cpg
+!data/geo/tl_2019_45_bg.shp.ea.iso.xml
+!data/geo/tl_2019_45_bg.shp.iso.xml
+!data/geo/tl_2019_45_bg.zip
+
+# ---- census ----
+!data/census/
+data/census/*
+!data/census/SC/
+data/census/SC/*
+!data/census/SC/ACSDT5Y2019.B11016-Data.csv
+!data/census/SC/ACSDT5Y2019.B01001-Data.csv
+!data/census/SC/ACSDT5Y2019.B11016-2026-08-25T131849.csv
+
+# ---- processed----
+!data/processed/
+data/processed/*
+!data/processed/census_samples.csv
+!data/processed/acs_targets.csv
+
+
+# ---- school ----
+!data/school/
+data/school/*
+!data/school/EDGE_GEOCODE_PUBLICSCH_1920.xlsx
+
+# ---- pop_export: include everything under pop_export ----
+!data/pop_export/
+!data/pop_export/**
+data/pop_export/.DS_Store
+data/pop_export/adj_upper_triang_non_hh.mtx
+data/pop_export/company_workers.csv
+data/pop_export/people.csv
+
+GeoPops_Measles.pptx
+GeoPops_Starsim.pptx
+
+icon.png
+
+.gitignoremarimo/
